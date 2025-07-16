@@ -9,4 +9,4 @@ def root():
     return 'Heloo World'
 
 if __name__ == "__main__":
-    uvicorn.run("main:app")
+    uvicorn.run("main:app", reload=True)
