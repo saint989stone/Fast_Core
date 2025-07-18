@@ -1,0 +1,70 @@
+name: Fast_Pipeline  # Название workflow
+
+on:  # Триггеры запуска
+  push:
+    branches: [ "main", "dev" ]  # Запуск при пуше в main или dev
+  pull_request:
+    branches: [ "main" ]        # Запуск при PR в main
+
+env:  # Глобальные переменные
+  APP_VERSION: "1.0.0"
+  DOCKER_IMAGE: "your-username/app-name"
+
+jobs:
+  test:  # Задача: Тестирование
+    name: Run Tests
+    runs-on: ubuntu-latest  # ОС (можно также windows-latest, macos-latest)
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4  # Клонирует репозиторий
+
+      - name: Setup Environment  # Пример для Node.js (замените для других языков)
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Install dependencies
+        run: npm install  # Или `pip install -r requirements.txt` (Python)
+
+      - name: Run tests
+        run: npm test  # Замените на свою команду тестов
+
+  build:  # Задача: Сборка (например, Docker)
+    name: Build Artifact
+    needs: test  # Зависит от успешного прохождения тестов
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build Docker image  # Пример для Docker
+        run: |
+          docker build -t $DOCKER_IMAGE:$APP_VERSION .
+          docker tag $DOCKER_IMAGE:$APP_VERSION $DOCKER_IMAGE:latest
+
+      - name: Push to Docker Hub (опционально)
+        if: github.ref == 'refs/heads/main'  # Только при пуше в main
+        run: |
+          echo "${{ secrets.DOCKER_HUB_TOKEN }}" | docker login -u "${{ secrets.DOCKER_HUB_USERNAME }}" --password-stdin
+          docker push $DOCKER_IMAGE:$APP_VERSION
+          docker push $DOCKER_IMAGE:latest
+
+  deploy:  # Задача: Деплой (пример для SSH/VPS)
+    name: Deploy to Server
+    needs: build  # Зависит от сборки
+    if: github.ref == 'refs/heads/main'  # Только для main-ветки
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1
+        with:
+          host: ${{ secrets.SERVER_IP }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /var/www/app
+            git pull origin main
+            docker-compose down && docker-compose up -d
