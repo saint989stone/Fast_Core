@@ -126,7 +126,7 @@ def post_devices(new_device: Device):
         'date_time': new_device.date_time
     })
     print(devices)
-    return {'result': True, 'message': 'Устройство добавлено'}
+    return {'result': True, 'message': 'Устройство добавлено и исполнено'}
 
 
 if __name__ == "__main__":
