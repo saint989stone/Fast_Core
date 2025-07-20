@@ -1,27 +1,35 @@
 from fastapi import FastAPI, HTTPException
 import uvicorn
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, validators, ConfigDict
+from datetime import datetime
 
 app = FastAPI()
 
-class Device(BaseModel):
+class DeviceSchema(BaseModel):
     id: int
     ip_address: str
     jump_host: str 
-    type_device: str
+    type_device: str = Field(max_length=2)
     hostname: str 
     region: str 
     filial: str 
     function: str 
-    level: str 
+    level: str = Field(max_length=4)
     territory: str
     group: str 
     utc: str
     id_host_zabbix: str
     instance_zabbix: str
     count_ar: int
-    count_unvail: int 
-    date_time: int
+    count_unvail: int = Field(ge=0, le=130)
+    date_time: datetime
+
+    model_config = ConfigDict(
+        extra='forbid',
+        str_min_length=1,
+        str_strip_whitespace=True
+        )           #extra запрет на добавление доролнительных ключей
+
 
 
 devices = [
@@ -41,7 +49,7 @@ devices = [
         'id_host_zabbix': '23455',
         'instance_zabbix': 'rspd',
         'count_ar': 0,
-        'count_unvail': 0, 
+        'count_unvail': 130, 
         'date_time': 0
     },
     {
@@ -87,47 +95,49 @@ devices = [
         summary='Получить список устройств', 
         tags=['Main']
 )
-def get_devices():
+def get_devices() -> list[DeviceSchema]:
     return devices
 
 @app.get(
         "/devices/{device_id}",
-         summary='Получить кодно устройство', 
+         summary='Получить одно устройство', 
          tags=['Main']
 )
 def get_device(device_id: int):
     for device in devices:
         if device['id'] == device_id:
-            print(device_id, )
             return device
         
     raise HTTPException(status_code=404)        #устройство не найдено
 
-@app.post('/books')
-def post_devices(new_device: Device):
-    print(type(new_device))
-    devices.append({
-        'id': len(devices) + 1,
-        'ip_address': new_device.ip_address,
-        'jump_host': new_device.jump_host, 
-        'type_device': new_device.type_device,
-        'hostname': new_device.hostname, 
-        'region': new_device.region, 
-        'filial': new_device.filial, 
-        'function': new_device.function, 
-        'level': new_device.level, 
-        'territory': new_device.territory,
-        'group': new_device.group, 
-        'utc': new_device.utc,
-        'id_host_zabbix': new_device.id_host_zabbix,
-        'instance_zabbix': new_device.instance_zabbix,
-        'count_ar': new_device.count_ar,
-        'count_unvail': new_device.count_unvail, 
-        'date_time': new_device.date_time
-    })
-    print(devices)
-    return {'result': True, 'message': 'Устройство добавлено и исполнено'}
+@app.post("/devices")
+def add_device(device: DeviceSchema):
+    devices.append(device)
+    return {'result': True, 'message': 'Устройство добавлено'}
 
+# @app.post('/devices')
+# def post_devices(new_device: DeviceSchema):
+#     devices.append({
+#         'id': len(devices) + 1,
+#         'ip_address': new_device.ip_address,
+#         'jump_host': new_device.jump_host, 
+#         'type_device': new_device.type_device,
+#         'hostname': new_device.hostname, 
+#         'region': new_device.region, 
+#         'filial': new_device.filial, 
+#         'function': new_device.function, 
+#         'level': new_device.level, 
+#         'territory': new_device.territory,
+#         'group': new_device.group, 
+#         'utc': new_device.utc,
+#         'id_host_zabbix': new_device.id_host_zabbix,
+#         'instance_zabbix': new_device.instance_zabbix,
+#         'count_ar': new_device.count_ar,
+#         'count_unvail': new_device.count_unvail, 
+#         'date_time': new_device.date_time
+#     })
+#     print(devices)
+#     return {'result': True, 'message': 'Устройство добавлено'}
 
 if __name__ == "__main__":
     uvicorn.run("main:app", reload=True)
