@@ -9,8 +9,11 @@ from typing import Annotated
 str_256 = Annotated[str,256]
 
 class Base(DeclarativeBase):
+    '''
+    Класс наследуемые от ORM SQL Alchemy для создания моделей
+    '''                   
     type_annotation_map = {
-        str_256: String(256)
+        str_256: String(256)            #создание кастомных типов данных в моделях
     }
     pass
 
@@ -19,4 +22,4 @@ engine = create_async_engine(
     echo=True
 )
 
-session_factory = async_sessionmaker(engine)
+session_factory = async_sessionmaker(engine)            #фабрика создания сессий для подлючения к базе данных

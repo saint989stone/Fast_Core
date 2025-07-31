@@ -5,11 +5,13 @@ from sqlalchemy.orm import Mapped, mapped_column
 from database import Base, str_256
 from datetime import datetime
 
+#Кастомные типы вместо mapped_column
 int_pk = Annotated[int, mapped_column(primary_key=True)]
-date_time_cr = Annotated[datetime, mapped_column(server_default=text("TIMEZONE('utc', now())"))]
-date_time_up = Annotated[datetime, mapped_column(server_default=text("TIMEZONE('utc', now())"),
-                         onupdate=datetime.utcnow,
-                        )]
+date_time_cr = Annotated[datetime, mapped_column(server_default=text("TIMEZONE('utc', now())"))]            #определение переменной даты в формате UTC создания записи через запрос к серверу БД (server_default) на уровне приложения (default)
+date_time_up = Annotated[datetime, mapped_column(
+        server_default=text("TIMEZONE('utc', now())"),
+        onupdate=datetime.utcnow,
+    )]
 
 class Devices(Base):
     __tablename__="devices"
@@ -38,5 +40,6 @@ class Interfaces(Base):
     interface_a: Mapped[str]
     interface_b: Mapped[str]
     id_interface_b: Mapped[str]
+    device_id_a: Mapped[int] = mapped_column(ForeignKey("devices.id", ondelete="CASCADE"))          #внешний ключ 
     create_date_time: Mapped[date_time_cr]
     update_date_time: Mapped[date_time_up]
